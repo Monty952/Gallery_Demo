@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- NEW FILE (Stage 5) -->
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Title and icon are set in Java, because they depend on the item's current state -->
+    <item
+        android:id="@+id/action_toggle_favourite"
+        android:title="@string/favourite_add" />
+
+    <item
+        android:id="@+id/action_add_to_album"
+        android:icon="@drawable/ic_albums"
+        android:title="@string/add_to_album" />
+</menu>

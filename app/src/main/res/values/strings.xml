@@ -1,0 +1,138 @@
+<resources>
+    <string name="app_name">Gallery Demo</string>
+    <string name="nav_photos">Photos</string>
+    <string name="nav_albums">Albums</string>
+
+    <string name="permission_title">Allow access to your photos and videos</string>
+    <string name="permission_body">Gallery Demo needs permission to read the photos and videos on this device so it can show them here. Nothing is uploaded or shared.</string>
+    <string name="permission_denied_title">Access is turned off</string>
+    <string name="permission_denied_body">Without permission, Gallery Demo cannot show your photos and videos. You can try again.</string>
+    <string name="permission_blocked_body">Android will no longer show the permission request. Open app settings and allow access to photos and videos.</string>
+    <string name="permission_action_allow">Allow access</string>
+    <string name="permission_action_settings">Open settings</string>
+
+    <string name="empty_title">No photos or videos yet</string>
+    <string name="empty_body">Photos and videos on this device will show up here.</string>
+    <string name="empty_partial_title">No items selected</string>
+    <string name="empty_partial_body">You allowed access to selected items only, and none are available. Choose items for Gallery Demo to show.</string>
+    <string name="action_refresh">Refresh</string>
+    <string name="action_select_items">Select items</string>
+    <string name="error_title">Something went wrong</string>
+    <string name="error_body">The gallery could not be loaded. Please try again.</string>
+    <string name="action_retry">Try again</string>
+    <string name="partial_access_banner">Showing only the items you selected</string>
+    <string name="action_select_more">Select more</string>
+
+    <string name="filter_button_description">Filter media</string>
+    <string name="filter_all">All</string>
+    <string name="filter_photos">Photos</string>
+    <string name="filter_videos">Videos</string>
+    <string name="filter_screens">Screenshots &amp; Screen Recordings</string>
+    <string name="filter_favourites">Favourites</string>
+    <string name="filter_status">%1$s · %2$s</string>
+    <plurals name="item_count">
+        <item quantity="one">%d item</item>
+        <item quantity="other">%d items</item>
+    </plurals>
+    <string name="filter_empty_photos">No photos found</string>
+    <string name="filter_empty_videos">No videos found</string>
+    <string name="filter_empty_screens">No screenshots or screen recordings found</string>
+    <string name="filter_empty_favourites">No favourites yet. Press and hold a photo or video, then choose Add to favourites.</string>
+    <string name="favourite_add">Add to favourites</string>
+    <string name="favourite_remove">Remove from favourites</string>
+    <string name="favourite_added">Added to favourites</string>
+    <string name="favourite_removed">Removed from favourites</string>
+
+    <string name="album_unknown">Unknown folder</string>
+    <string name="albums_empty_title">No albums yet</string>
+    <string name="albums_empty_body">Albums appear here when photos or videos are saved in folders on this device. You can also create your own album with the + button.</string>
+    <string name="album_detail_empty">This album is empty</string>
+
+    <!-- NEW (Stage 7): create album -->
+    <string name="action_cancel">Cancel</string>
+    <string name="action_save">Save</string>
+    <string name="action_close">Close</string>
+    <string name="create_album_title">Create album</string>
+    <string name="album_name_hint">Album name</string>
+    <string name="create_album_button_description">Create album</string>
+    <string name="error_name_empty">Enter an album name</string>
+    <string name="error_name_long">Use 40 characters or fewer</string>
+    <string name="error_name_duplicate">An album with this name already exists</string>
+    <string name="album_created">Album %1$s created</string>
+    <string name="album_create_failed">The album could not be created</string>
+    <string name="album_custom">Custom</string>
+    <string name="add_to_album">Add to album</string>
+    <string name="add_to_album_title">Add to album</string>
+    <string name="no_virtual_albums">Create an album first with the + button on the Albums tab</string>
+    <string name="added_to_album">Added %1$d to %2$s</string>
+    <string name="already_in_album">Already in %1$s</string>
+    <string name="virtual_album_empty">This album is empty. On the Photos tab, press and hold a photo and choose Add to album.</string>
+
+    <!-- NEW (Stage 8): bottom sheet and collections -->
+    <string name="albums_menu_button_description">More album options</string>
+    <string name="sheet_title">Albums menu</string>
+    <string name="sheet_more_albums">More albums</string>
+    <string name="sheet_featured">Featured</string>
+    <string name="sheet_media_type">Media type</string>
+    <string name="sheet_more">More</string>
+    <string name="sheet_tip">Tip: press and hold a photo to add it to an album.</string>
+    <string name="albums_status_limited">Showing %1$d of %2$d albums</string>
+    <string name="more_albums_all_shown">All %1$d albums are already shown</string>
+    <string name="more_albums_showing_all">Showing all albums</string>
+    <string name="more_albums_showing_main">Showing main albums only</string>
+    <string name="featured_title">Featured</string>
+    <string name="media_type_title">Media type</string>
+    <string name="collection_empty">Nothing to show here yet</string>
+
+    <!-- NEW (Stage 9): viewer -->
+    <string name="viewer_back">Back</string>
+    <string name="viewer_favourite">Favourite</string>
+    <string name="viewer_position">%1$d / %2$d</string>
+    <string name="viewer_error_image">This image could not be loaded</string>
+    <string name="viewer_error_video">This video could not be played</string>
+
+    <!-- NEW (Stage 10): settings and tools -->
+    <string name="settings_title">More</string>
+    <string name="tool_sort_title">Sort order</string>
+    <string name="tool_refresh_title">Refresh gallery</string>
+    <string name="tool_refresh_subtitle">Reload photos, videos and albums</string>
+    <string name="tool_info_title">Gallery information</string>
+    <string name="tool_info_subtitle">Counts and storage used</string>
+    <string name="tool_permissions_title">App permissions</string>
+    <string name="tool_permissions_subtitle">Open Android settings for this app</string>
+    <string name="info_title">Gallery information</string>
+    <string name="info_body">Photos: %1$d\nVideos: %2$d\nAlbums: %3$d\nFavourites: %4$d\nTotal size: %5$s</string>
+    <string name="info_no_access">Allow access to photos and videos to see gallery information.</string>
+
+    <!-- NEW (Stage 11): toolbar, search, sort, selection -->
+    <string name="menu_search">Search</string>
+    <string name="menu_sort">Sort</string>
+    <string name="menu_select">Select items</string>
+    <string name="menu_refresh">Refresh</string>
+    <string name="menu_settings">Settings</string>
+    <string name="search_hint">Search by name</string>
+    <string name="search_no_results">No results for %1$s</string>
+    <string name="refreshing">Refreshing…</string>
+    <string name="sort_title">Sort by</string>
+    <string name="sort_date">Date added</string>
+    <string name="sort_name">Name</string>
+    <string name="sort_size">Size</string>
+    <string name="select_all">Select all</string>
+    <string name="selection_favourite">Add to favourites</string>
+    <string name="selection_add_album">Add to album</string>
+    <string name="selected_count">%d selected</string>
+    <string name="nothing_to_select">Nothing to select</string>
+    <!-- TODO: Remove or change this placeholder text -->
+    <string name="hello_blank_fragment">Hello blank fragment</string>
+
+    <string name="nav_calls">Call History</string>
+    <string name="action_edit">Edit</string>
+    <string name="action_delete">Delete</string>
+    <string name="call_options_title">Call Options</string>
+
+    <string name="delete_call_title">Delete Call Record</string>
+    <string name="delete_call_message">Are you sure you want to delete this call record with %s?</string>
+    <string name="call_deleted_success">Call record deleted</string>
+    <string name="call_delete_failed">Unable to delete call record (Permission or System restriction)</string>
+
+</resources>

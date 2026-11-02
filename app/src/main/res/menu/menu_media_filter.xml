@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- NEW FILE (Stage 5) -->
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- checkableBehavior="single" = like radio buttons: only one can be ticked -->
+    <group
+        android:checkableBehavior="single">
+        <item
+            android:id="@+id/filter_all"
+            android:icon="@drawable/ic_filter_all"
+            android:title="@string/filter_all" />
+        <item
+            android:id="@+id/filter_photos"
+            android:icon="@drawable/ic_photos"
+            android:title="@string/filter_photos" />
+        <item
+            android:id="@+id/filter_videos"
+            android:icon="@drawable/ic_filter_videos"
+            android:title="@string/filter_videos" />
+        <item
+            android:id="@+id/filter_screens"
+            android:icon="@drawable/ic_filter_screenshots"
+            android:title="@string/filter_screens" />
+        <item
+            android:id="@+id/filter_favourites"
+            android:icon="@drawable/ic_favorite"
+            android:title="@string/filter_favourites" />
+    </group>
+</menu>

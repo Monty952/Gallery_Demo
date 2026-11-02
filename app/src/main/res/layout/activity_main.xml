@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical">
+
+    <com.google.android.material.appbar.AppBarLayout
+        android:id="@+id/app_bar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="?attr/colorSurface"
+        app:liftOnScroll="false">
+
+        <com.google.android.material.appbar.MaterialToolbar
+            android:id="@+id/toolbar"
+            android:layout_width="match_parent"
+            android:layout_height="?attr/actionBarSize"
+            app:title="@string/app_name" />
+
+    </com.google.android.material.appbar.AppBarLayout>
+
+    <!-- CHANGED: the fragment area now fills the rest of the screen,
+         and the tab buttons float on top of it (no BottomNavigationView) -->
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1">
+
+        <androidx.fragment.app.FragmentContainerView
+            android:id="@+id/fragment_container"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" />
+
+        <!-- NEW: the floating tab switcher (bottom centre).
+             20dp bottom margin lines its centre up with the 56dp round buttons inside the screens. -->
+        <LinearLayout
+            android:id="@+id/tab_switcher"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="bottom|center_horizontal"
+            android:layout_marginBottom="20dp"
+            android:background="@drawable/bg_tab_switcher"
+            android:elevation="6dp"
+            android:orientation="horizontal"
+            android:padding="4dp">
+
+            <com.google.android.material.floatingactionbutton.FloatingActionButton
+                android:id="@+id/tab_photos_fab"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:contentDescription="@string/nav_photos"
+                android:src="@drawable/ic_photos"
+                app:elevation="0dp"
+                app:fabSize="mini"
+                app:hoveredFocusedTranslationZ="0dp"
+                app:pressedTranslationZ="0dp" />
+
+            <com.google.android.material.floatingactionbutton.FloatingActionButton
+                android:id="@+id/tab_albums_fab"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="4dp"
+                android:contentDescription="@string/nav_albums"
+                android:src="@drawable/ic_albums"
+                app:elevation="0dp"
+                app:fabSize="mini"
+                app:hoveredFocusedTranslationZ="0dp"
+                app:pressedTranslationZ="0dp" />
+
+
+            <com.google.android.material.floatingactionbutton.FloatingActionButton
+                android:id="@+id/tab_calls_fab"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="4dp"
+                android:contentDescription="@string/nav_albums"
+                android:src="@drawable/ic_call"
+                app:elevation="0dp"
+                app:fabSize="mini"
+                app:hoveredFocusedTranslationZ="0dp"
+                app:pressedTranslationZ="0dp" />
+
+        </LinearLayout>
+
+    </FrameLayout>
+
+</LinearLayout>
