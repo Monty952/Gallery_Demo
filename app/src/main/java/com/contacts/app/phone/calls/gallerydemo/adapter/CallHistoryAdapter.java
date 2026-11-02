@@ -1,11 +1,11 @@
 package com.contacts.app.phone.calls.gallerydemo.adapter;
 
-import static com.contacts.app.phone.calls.gallerydemo.util.MediaUtils.formatDuration;
-
 import android.content.Context;
+import android.graphics.Color;
 import android.provider.CallLog;
 import android.text.format.DateUtils;
 import android.view.LayoutInflater;
+import android.view.View;
 import android.view.ViewGroup;
 
 import androidx.annotation.NonNull;
@@ -19,7 +19,11 @@ import com.contacts.app.phone.calls.gallerydemo.databinding.ItemCallHistoryBindi
 import com.contacts.app.phone.calls.gallerydemo.model.CallLogItem;
 import com.google.firebase.crashlytics.buildtools.reloc.javax.annotation.Nonnull;
 
+import java.util.HashSet;
 import java.util.Locale;
+import java.util.Set;
+
+@SuppressWarnings("all")
 
 public class CallHistoryAdapter extends ListAdapter<CallLogItem, CallHistoryAdapter.CallViewHolder> {
 
@@ -28,10 +32,14 @@ public class CallHistoryAdapter extends ListAdapter<CallLogItem, CallHistoryAdap
      */
     public interface OnCallItemListener{
         void onItemClicked(@NonNull CallLogItem item);
-        void onItemLongClick(@NonNull CallLogItem item);
+        void onItemLongClicked(@NonNull CallLogItem item);
+        void onIconClicked(@NonNull CallLogItem item);
+        void onIconLongClicked(@NonNull CallLogItem item);
 
     }
     private final OnCallItemListener listener;
+    private final Set<Long> selectedIds = new HashSet<>();
+    private boolean isSelectionMode = false;
 
     // DiffUtil calculates the exact difference between two lists so animations are smooth
     private static final DiffUtil.ItemCallback<CallLogItem> DIFF_CALLBACK =
@@ -46,6 +54,55 @@ public class CallHistoryAdapter extends ListAdapter<CallLogItem, CallHistoryAdap
                     return oldItem.equals(newItem);
                 }
             };
+
+// For Multiple Selection
+    public boolean isSelectionMode() {
+        return isSelectionMode;
+    }
+
+    public boolean areAllSelected() {
+        return !getCurrentList().isEmpty() && selectedIds.size() == getCurrentList().size();
+    }
+    public void setSelectionMode(boolean selectionMode) {
+        if (this.isSelectionMode != selectionMode) {
+            this.isSelectionMode = selectionMode;
+            if (!selectionMode) {
+                selectedIds.clear();
+            }
+            notifyDataSetChanged();
+        }
+    }
+    public void toggleSelection(long id) {
+        if (selectedIds.contains(id)) {
+            selectedIds.remove(id);
+        } else {
+            selectedIds.add(id);
+        }
+        notifyDataSetChanged();
+    }
+
+    public void selectAll() {
+        for (CallLogItem item : getCurrentList()) {
+            selectedIds.add(item.getId());
+        }
+        notifyDataSetChanged();
+    }
+
+    public void clearSelection() {
+        selectedIds.clear();
+        notifyDataSetChanged();
+    }
+
+    public Set<Long> getSelectedIds() {
+        return new HashSet<>(selectedIds);
+    }
+
+    public int getSelectedItemCount() {
+        return selectedIds.size();
+    }
+
+
+
 
     public CallHistoryAdapter(OnCallItemListener listener) {
         super(DIFF_CALLBACK);
@@ -63,8 +120,8 @@ public class CallHistoryAdapter extends ListAdapter<CallLogItem, CallHistoryAdap
     @Override
     public void onBindViewHolder(@NonNull CallViewHolder holder, int position) {
         CallLogItem item = getItem(position);
-        holder.bind(item, listener);
-
+        boolean isSelected = selectedIds.contains(item.getId());
+        holder.bind(item, listener, isSelectionMode, isSelected);
     }
 
     /**
@@ -79,7 +136,10 @@ public class CallHistoryAdapter extends ListAdapter<CallLogItem, CallHistoryAdap
             this.binding = binding;
         }
 
-        public void bind(@NonNull CallLogItem item, OnCallItemListener listener) {
+        public void bind(@NonNull CallLogItem item,
+                         OnCallItemListener listener,
+                         boolean isSelectionMode,
+                         boolean isSelected) {
             Context context = itemView.getContext();
 
             // 1. Caller Name: if name is null/empty, display the phone number instead
@@ -109,7 +169,35 @@ public class CallHistoryAdapter extends ListAdapter<CallLogItem, CallHistoryAdap
             // 4. Set Call Type Icon and tint color based on call type
             bindCallTypeIcon(item.getType());
 
-            // 5. Clicks
+             // 5. SELECTION MODE UI:
+            if (isSelectionMode) {
+                // In selection mode: tint row background if selected
+                itemView.setBackgroundColor(isSelected
+                        ? ContextCompat.getColor(context, R.color.brand_primary_container)
+                        : android.graphics.Color.TRANSPARENT);
+            } else {
+                itemView.setBackgroundResource(0);
+            }
+
+
+            // 6. SEPARATED TOUCH LISTENERS:
+            // A. The Call Type Icon:
+            binding.imageCallType.setClickable(true);
+            binding.imageCallType.setFocusable(true);
+            binding.imageCallType.setOnClickListener(v -> {
+                if (listener != null) {
+                    listener.onIconClicked(item);
+                }
+            });
+            binding.imageCallType.setOnLongClickListener(v -> {
+                if (listener != null) {
+                    listener.onIconLongClicked(item);
+                    return true; // CONSUMED: Do NOT trigger the parent row's long-click!
+                }
+                return false;
+            });
+
+            // B. The Rest of the Row (itemView):
             itemView.setOnClickListener(v -> {
                 if (listener != null) {
                     listener.onItemClicked(item);
@@ -117,8 +205,8 @@ public class CallHistoryAdapter extends ListAdapter<CallLogItem, CallHistoryAdap
             });
             itemView.setOnLongClickListener(v -> {
                 if (listener != null) {
-                    listener.onItemLongClick(item);
-                    return true; // true means we consumed the event (do not trigger normal click)
+                    listener.onItemLongClicked(item);
+                    return true; // CONSUMED
                 }
                 return false;
             });

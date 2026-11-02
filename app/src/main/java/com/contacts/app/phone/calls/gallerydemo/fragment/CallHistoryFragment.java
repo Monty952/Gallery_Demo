@@ -14,6 +14,9 @@ import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.appcompat.app.AlertDialog;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.view.ActionMode;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -25,8 +28,11 @@ import android.provider.ContactsContract;
 import android.provider.Settings;
 import android.util.Log;
 import android.view.LayoutInflater;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.contacts.app.phone.calls.gallerydemo.R;
@@ -40,6 +46,7 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
 
 import java.util.List;
+@SuppressWarnings("all")
 
 
 public class CallHistoryFragment extends Fragment implements CallHistoryAdapter.OnCallItemListener{
@@ -47,7 +54,15 @@ public class CallHistoryFragment extends Fragment implements CallHistoryAdapter.
     private FragmentCallHistoryBinding binding;
     private CallHistoryAdapter adapter;
     private CallLogRepository repository;
+    @Nullable
+    private AlertDialog progressDialog;
+    @Nullable
+    private @org.jspecify.annotations.Nullable ActionMode actionMode;
 
+
+    public CallHistoryFragment() {
+        // Required empty public constructor
+    }
 
     private  static final String[] CALL_PERMISSIONS = {
             Manifest.permission.READ_CALL_LOG,
@@ -60,7 +75,7 @@ public class CallHistoryFragment extends Fragment implements CallHistoryAdapter.
     private final ActivityResultLauncher<String[]> callLogPermissionLauncher =
             registerForActivityResult(new ActivityResultContracts.RequestMultiplePermissions(),result -> {
                         Boolean readCallLog  = result.get(Manifest.permission.READ_CALL_LOG);
-                        Boolean readContacts  = result.get(Manifest.permission.WRITE_CALL_LOG);
+                        Boolean readContacts  = result.get(Manifest.permission.READ_CONTACTS);
 
                         if (Boolean.TRUE.equals(readCallLog)) {
                             onPermissionGranted();
@@ -75,18 +90,140 @@ public class CallHistoryFragment extends Fragment implements CallHistoryAdapter.
         @Override
         public void onChange(boolean selfChange) {
             super.onChange(selfChange);
+            // User came back from saving! Show the loading dialog
+            showProgressDialog("Updating contact information...");
             // Changes detected! Automatically reload call records and contact names
             if (isAdded() && hasCallLogPermission()) {
-                loadCallData();
+                binding.recyclerViewCalls.postDelayed(() -> {
+                    loadCallData();
+                }, 1000);
             }
         }
     };
 
-    public CallHistoryFragment() {
-        // Required empty public constructor
+    private final androidx.appcompat.view.ActionMode.Callback actionModeCallback =
+            new androidx.appcompat.view.ActionMode.Callback() {
+                @Override
+                public boolean onCreateActionMode(androidx.appcompat.view.ActionMode mode, android.view.Menu menu) {
+                    mode.getMenuInflater().inflate(R.menu.menu_call_selection, menu);
+                    adapter.setSelectionMode(true);
+                    return true;
+                }
+
+                @Override
+                public boolean onPrepareActionMode(androidx.appcompat.view.ActionMode mode, android.view.Menu menu) {
+                    return false;
+                }
+
+                @Override
+                public boolean onActionItemClicked(androidx.appcompat.view.ActionMode mode, android.view.MenuItem item) {
+                    int id = item.getItemId();
+                    /*if (id == R.id.action_select_all) {
+                        // If already all selected, clear all and exit selection mode!
+                        adapter.clearSelection();
+                        if (actionMode != null) {
+                            actionMode.finish();
+                        }
+                    }else {
+                        // Not all selected: select all of them!
+                        adapter.selectAll();
+                        updateActionModeTitle();
+                    }
+                    return true;*/
+                    if (id == R.id.action_select_all) {
+                        adapter.selectAll();
+                        updateActionModeTitle();
+                        return true;
+                    } else if (id == R.id.action_delete_selected) {
+                        confirmBatchDelete();
+                        return true;
+                    }
+                    return false;
+                }
+
+                @Override
+                public void onDestroyActionMode(androidx.appcompat.view.ActionMode mode) {
+                    adapter.setSelectionMode(false);
+                    actionMode = null;
+                }
+            };
+
+
+
+
+    private void updateActionModeTitle() {
+        if (actionMode != null) {
+            int count = adapter.getSelectedItemCount();
+            actionMode.setTitle(count + " selected");
+            if (count == 0) {
+                actionMode.finish(); // Exit selection mode if user unselects everything
+            }
+        }
+    }
+
+    private void confirmBatchDelete() {
+        java.util.Set<Long> selectedIds = adapter.getSelectedIds();
+        if (selectedIds.isEmpty()) return;
+        new MaterialAlertDialogBuilder(requireContext())
+                .setTitle("Delete Call Records")
+                .setMessage("Are you sure you want to delete " + selectedIds.size() + " selected call records?")
+                .setNegativeButton(R.string.action_cancel, null)
+                .setPositiveButton(R.string.action_delete, (dialog, which) -> {
+                    performBatchDelete(selectedIds);
+                })
+                .show();
+    }
+    private void performBatchDelete(java.util.Set<Long> selectedIds) {
+        if (!hasWriteCallLogPermission()) {
+            Toast.makeText(requireContext(), "Write permission required to delete calls", Toast.LENGTH_SHORT).show();
+            callLogPermissionLauncher.launch(CALL_PERMISSIONS);
+            return;
+        }
+        showProgressDialog("Deleting " + selectedIds.size() + " records...");
+        repository.deleteMultipleCallRecords(selectedIds, new CallLogRepository.DeleteCallback() {
+            @Override
+            public void onSuccess() {
+                dismissProgressDialog();
+                if (actionMode != null) {
+                    actionMode.finish();
+                }
+                Toast.makeText(requireContext(), "Selected records deleted", Toast.LENGTH_SHORT).show();
+                loadCallData();
+            }
+            @Override
+            public void onError(@NonNull Exception error) {
+                dismissProgressDialog();
+                Toast.makeText(requireContext(), R.string.call_delete_failed, Toast.LENGTH_LONG).show();
+            }
+        });
     }
 
 
+
+
+
+
+    private void showProgressDialog(String message) {
+        if (!isAdded()) return;
+        dismissProgressDialog(); // Dismiss any previous one
+        View view = LayoutInflater.from(requireContext()).inflate(R.layout.dialog_progress_loading, null);
+        TextView messageView = view.findViewById(R.id.text_loading_message);
+        if (messageView != null && message != null) {
+            messageView.setText(message);
+        }
+        progressDialog = new MaterialAlertDialogBuilder(requireContext())
+                .setView(view)
+                .setCancelable(false) // User cannot accidentally dismiss by tapping outside while saving
+                .create();
+        progressDialog.show();
+    }
+
+    private void dismissProgressDialog() {
+        if (progressDialog != null && progressDialog.isShowing()) {
+            progressDialog.dismiss();
+            progressDialog = null;
+        }
+    }
 
 
     @Nullable
@@ -193,12 +330,13 @@ public class CallHistoryFragment extends Fragment implements CallHistoryAdapter.
 
     private void loadCallData() {
         if (binding == null) return;
-
-        binding.progressLoading.setVisibility(View.VISIBLE);
+        showProgressDialog("Updating contact information...");
+//        binding.progressLoading.setVisibility(View.VISIBLE);
 
         repository.loadCallHistory(new CallLogRepository.LoadCallback() {
             @Override
             public void onLoaded(@NonNull List<CallLogItem> items) {
+                dismissProgressDialog();
                 if (binding == null) return;
                 binding.progressLoading.setVisibility(View.GONE);
                 if (items.isEmpty()) {
@@ -217,6 +355,7 @@ public class CallHistoryFragment extends Fragment implements CallHistoryAdapter.
 
             @Override
             public void onError(@NonNull Exception error) {
+                dismissProgressDialog();
                 if (binding == null) return;
                 binding.progressLoading.setVisibility(View.GONE);
                 binding.recyclerViewCalls.setVisibility(View.GONE);
@@ -231,15 +370,55 @@ public class CallHistoryFragment extends Fragment implements CallHistoryAdapter.
 
     @Override
     public void onItemClicked(@NonNull CallLogItem item) {
-        String name = item.getName() != null ? item.getName() : item.getNumber();
-        Toast.makeText(requireContext(), "Clicked: " + name, Toast.LENGTH_SHORT).show();
+        if (adapter.isSelectionMode()) {
+            // In selection mode: tapping anywhere on the row toggles selection
+            toggleItemSelection(item.getId());
+        } else {
+            // Normal tap: preserve existing behavior
+            String name = item.getName() != null ? item.getName() : item.getNumber();
+            Toast.makeText(requireContext(), "Clicked: " + name, Toast.LENGTH_SHORT).show();
+        }
     }
 
     @Override
-    public void onItemLongClick(@NonNull CallLogItem item) {
-        String name = item.getName() != null ? item.getName() : item.getNumber();
-        showCallItemOptionsDialog(item);
-        Log.d(TAG, "onItemLongClick: " + name);
+    public void onItemLongClicked(@NonNull CallLogItem item) {
+        if (adapter.isSelectionMode()) {
+            // If already in selection mode, long-pressing also toggles selection
+            toggleItemSelection(item.getId());
+        } else {
+            // RESTORED: Long press on the row opens the Edit / Delete Dialog!
+            showCallItemOptionsDialog(item);
+        }
+    }
+
+    @Override
+    public void onIconClicked(@NonNull CallLogItem item) {
+        if (adapter.isSelectionMode()) {
+            // In selection mode: tap icon toggles selection
+            toggleItemSelection(item.getId());
+        } else {
+            // If not in selection mode, tapping the icon also starts selection mode!
+            startSelectionMode(item.getId());
+        }
+    }
+    @Override
+    public void onIconLongClicked(@NonNull CallLogItem item) {
+        // Long-pressing specifically on the icon enters Selection Mode!
+        if (!adapter.isSelectionMode()) {
+            startSelectionMode(item.getId());
+        } else {
+            toggleItemSelection(item.getId());
+        }
+    }
+
+    private void startSelectionMode(long initialSelectedId) {
+        AppCompatActivity activity = (AppCompatActivity) requireActivity();
+        actionMode = activity.startSupportActionMode(actionModeCallback);
+        toggleItemSelection(initialSelectedId);
+    }
+    private void toggleItemSelection(long id) {
+        adapter.toggleSelection(id);
+        updateActionModeTitle();
     }
 
     private void showCallItemOptionsDialog(@NonNull CallLogItem item) {
@@ -351,7 +530,7 @@ public class CallHistoryFragment extends Fragment implements CallHistoryAdapter.
 
         if (binding == null) return;
         // Show spinner while deleting
-        binding.progressLoading.setVisibility(View.VISIBLE);
+//        binding.progressLoading.setVisibility(View.VISIBLE);
         repository.deleteCallRecord(item.getId(), new CallLogRepository.DeleteCallback() {
             @Override
             public void onSuccess() {
@@ -410,10 +589,17 @@ public class CallHistoryFragment extends Fragment implements CallHistoryAdapter.
     @Override
     public void onDestroyView() {
         super.onDestroyView();
+        if (actionMode != null) {
+            actionMode.finish();
+            actionMode = null;
+        }
+        dismissProgressDialog(); // Dismiss to prevent window leak
         // Prevent memory leaks: views are destroyed when fragments are detached/hidden
         if (repository != null) {
             repository.close();
         }
         binding = null;
     }
+
+
 }

@@ -67,7 +67,19 @@
         app:layout_constraintTop_toTopOf="@id/text_caller_name"
         tools:text="10:30 AM" />
 
-
+    <!-- Selection Checkmark Indicator (Visible only in selection mode) -->
+    <ImageView
+        android:id="@+id/image_selected_check"
+        android:layout_width="24dp"
+        android:layout_height="24dp"
+        android:contentDescription="Selected"
+        android:src="@drawable/ic_check_circle"
+        android:visibility="gone"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:tint="?attr/colorPrimary"
+        tools:visibility="visible" />
 
 
 </androidx.constraintlayout.widget.ConstraintLayout>

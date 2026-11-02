@@ -20,6 +20,7 @@ import com.contacts.app.phone.calls.gallerydemo.model.CallLogItem;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -56,6 +57,49 @@ public class CallLogRepository {
                 }
             } catch (Exception e) {
                 Log.e(TAG, "Failed to delete call record", e);
+                mainHandler.post(() -> callback.onError(e));
+            }
+        });
+    }
+
+    /**
+     * Deletes multiple call records in a single background query using their IDs.
+     */
+    public void deleteMultipleCallRecords(@NonNull Set<Long> recordIds, @NonNull DeleteCallback callback) {
+        if (recordIds.isEmpty()) {
+            mainHandler.post(callback::onSuccess);
+            return;
+        }
+
+        executor.execute(() -> {
+            try {
+                // Build a parameterized SQL query: "_id IN (?, ?, ?)"
+                StringBuilder where = new StringBuilder(CallLog.Calls._ID + " IN (");
+                String[] selectionArgs = new String[recordIds.size()];
+                int index = 0;
+
+                for (Long id : recordIds) {
+                    if (index > 0) {
+                        where.append(", ");
+                    }
+                    where.append("?");
+                    selectionArgs[index] = String.valueOf(id);
+                    index++;
+                }
+                where.append(")");
+
+                int rowsDeleted = contentResolver.delete(
+                        CallLog.Calls.CONTENT_URI,
+                        where.toString(),
+                        selectionArgs
+                );
+                if (rowsDeleted > 0) {
+                    mainHandler.post(callback::onSuccess);
+                } else {
+                    mainHandler.post(() -> callback.onError(new Exception("No records were deleted")));
+                }
+            } catch (RuntimeException e) {
+                Log.e(TAG, "Failed to batch delete call records", e);
                 mainHandler.post(() -> callback.onError(e));
             }
         });
