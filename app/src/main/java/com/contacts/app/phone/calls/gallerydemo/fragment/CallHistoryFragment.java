@@ -6,6 +6,7 @@ import android.Manifest;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.database.ContentObserver;
 import android.net.Uri;
 import android.os.Bundle;
 
@@ -17,6 +18,10 @@ import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 
+import android.os.Handler;
+import android.os.Looper;
+import android.provider.CallLog;
+import android.provider.ContactsContract;
 import android.provider.Settings;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -46,39 +51,36 @@ public class CallHistoryFragment extends Fragment implements CallHistoryAdapter.
 
     private  static final String[] CALL_PERMISSIONS = {
             Manifest.permission.READ_CALL_LOG,
-            Manifest.permission.WRITE_CALL_LOG
+            Manifest.permission.WRITE_CALL_LOG,
+            Manifest.permission.READ_CONTACTS
     };
 
     // New Code
+    // Triggers when the user returns from saving/editing a contact in the Contacts app
     private final ActivityResultLauncher<String[]> callLogPermissionLauncher =
             registerForActivityResult(new ActivityResultContracts.RequestMultiplePermissions(),result -> {
-                        Boolean readGranted = result.get(Manifest.permission.READ_CALL_LOG);
-                        Boolean writeGranted = result.get(Manifest.permission.WRITE_CALL_LOG);
+                        Boolean readCallLog  = result.get(Manifest.permission.READ_CALL_LOG);
+                        Boolean readContacts  = result.get(Manifest.permission.WRITE_CALL_LOG);
 
-                        if (Boolean.TRUE.equals(readGranted)) {
+                        if (Boolean.TRUE.equals(readCallLog)) {
                             onPermissionGranted();
                         } else {
                             onPermissionDenied();
                         }
 
             });
-  // Old Code
-  /*  private final ActivityResultLauncher<String> callLogPermissionLauncher =
-            registerForActivityResult(new ActivityResultContracts.RequestPermission(), isGranted -> {
-                if (isGranted) {
-                    onPermissionGranted();
-                }else {
-                    onPermissionDenied();
-                }
-            });*/
 
-    // Triggers when the user returns from saving/editing a contact in the Contacts app
-    private final ActivityResultLauncher<Intent> editContactLauncher =
-            registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), result -> {
-                // User came back from the Contacts screen! Immediately reload call data
+    private final Handler observerHandler = new Handler(Looper.getMainLooper());
+    private final ContentObserver contactChangeObserver  = new ContentObserver(observerHandler) {
+        @Override
+        public void onChange(boolean selfChange) {
+            super.onChange(selfChange);
+            // Changes detected! Automatically reload call records and contact names
+            if (isAdded() && hasCallLogPermission()) {
                 loadCallData();
-            });
-
+            }
+        }
+    };
 
     public CallHistoryFragment() {
         // Required empty public constructor
@@ -129,10 +131,15 @@ public class CallHistoryFragment extends Fragment implements CallHistoryAdapter.
 
 
     private boolean hasCallLogPermission() {
-        return ContextCompat.checkSelfPermission(
+        boolean hasCallLog = ContextCompat.checkSelfPermission(
                 requireContext(),
                 Manifest.permission.READ_CALL_LOG
         ) == PackageManager.PERMISSION_GRANTED;
+        boolean hasContacts = ContextCompat.checkSelfPermission(
+                requireContext(),
+                Manifest.permission.READ_CONTACTS
+        ) == PackageManager.PERMISSION_GRANTED;
+        return hasCallLog && hasContacts;
     }
 
     private void requestCallLogPermission() {
@@ -289,54 +296,33 @@ public class CallHistoryFragment extends Fragment implements CallHistoryAdapter.
                         return;
                     }
                     // Save the contact into Android's Contact system
-                    saveContactInfo(updatedName, updatedNumber);
+                    saveContactInfo(item, updatedName, updatedNumber);
                 })
                 .show();
     }
 
-/*    private void onEditCallOptionSelected(@NonNull CallLogItem item) {
-        DialogEditCallContactBinding dialogBinding = DialogEditCallContactBinding
-                .inflate(LayoutInflater.from(requireContext()));
+    private void saveContactInfo(@NonNull CallLogItem item,String newName, String newNumber) {
+        Intent intent;
 
-        // 2. Pre-fill the input fields with existing data
-        if (item.getName() != null && !item.getName().trim().isEmpty()) {
-            dialogBinding.editTextName.setText(item.getName());
+        if (item.getLookupUri() != null) {
+            // This prevents duplicate creation!
+            Uri contactUri = Uri.parse(item.getLookupUri());
+            intent = new Intent(Intent.ACTION_EDIT);
+            intent.setDataAndType(contactUri, ContactsContract.Contacts.CONTENT_ITEM_TYPE);
+            intent.putExtra(ContactsContract.Intents.Insert.NAME, newName);
+            intent.putExtra(ContactsContract.Intents.Insert.PHONE, newNumber);
+        } else {
+            // SCENARIO 2: Unknown caller / New contact!
+            intent = new Intent(Intent.ACTION_INSERT_OR_EDIT);
+            intent.setType(ContactsContract.Contacts.CONTENT_ITEM_TYPE);
+            intent.putExtra(ContactsContract.Intents.Insert.NAME, newName);
+            intent.putExtra(ContactsContract.Intents.Insert.PHONE, newNumber);
         }
-        dialogBinding.editTextNumber.setText(item.getNumber());
-
-        MaterialAlertDialogBuilder builder = new MaterialAlertDialogBuilder(requireContext())
-                .setTitle("Edit Contact Information")
-                .setView(dialogBinding.getRoot())
-                .setNegativeButton(R.string.action_cancel, null)
-                .setPositiveButton("Save Contact", (dialog, which) -> {
-                    String updatedName = dialogBinding.editTextName.getText() != null
-                            ? dialogBinding.editTextName.getText().toString().trim()
-                            : "";
-                    String updatedNumber = dialogBinding.editTextNumber.getText() != null
-                            ? dialogBinding.editTextNumber.getText().toString().trim()
-                            : "";
-                    // Validation: phone number cannot be blank
-                    if (updatedNumber.isEmpty()) {
-                        Toast.makeText(requireContext(), "Phone number cannot be empty", Toast.LENGTH_SHORT).show();
-                        return;
-                    }
-                    // Save the contact into Android's Contact system
-                    saveContactInfo(updatedName, updatedNumber);
-                })
-                .show();
-
-    }*/
-
-    private void saveContactInfo(String name, String number) {
-        Intent intent = new Intent(Intent.ACTION_INSERT_OR_EDIT);
-        intent.setType(android.provider.ContactsContract.Contacts.CONTENT_ITEM_TYPE);
-        intent.putExtra(android.provider.ContactsContract.Intents.Insert.NAME, name);
-        intent.putExtra(android.provider.ContactsContract.Intents.Insert.PHONE, number);
         try {
-            editContactLauncher.launch(intent);
-//            startActivity(intent);
+            startActivity(intent);
         } catch (Exception e) {
-            Toast.makeText(requireContext(), "No contacts app found to handle this action", Toast.LENGTH_SHORT).show();
+            Toast.makeText(requireContext(), "No contacts app found to handle this action",
+                    Toast.LENGTH_SHORT).show();
         }
     }
 
@@ -385,6 +371,35 @@ public class CallHistoryFragment extends Fragment implements CallHistoryAdapter.
         });
     }
 
+    @Override
+    public void onStart() {
+        super.onStart();
+        try {
+            requireContext().getContentResolver().registerContentObserver(
+                    ContactsContract.AUTHORITY_URI,
+                    true, // true means notify for all descendant paths (sub-folders)
+                    contactChangeObserver
+            );
+            requireContext().getContentResolver().registerContentObserver(
+                    CallLog.CONTENT_URI,
+                    true,
+                    contactChangeObserver
+            );
+        } catch (Exception e) {
+            // In case permissions were revoked while starting
+        }
+    }
+
+    @Override
+    public void onStop() {
+        super.onStop();
+        // Always unregister when not visible to prevent battery drain and memory leaks
+        try {
+            requireContext().getContentResolver().unregisterContentObserver(contactChangeObserver);
+        } catch (Exception e) {
+            // Ignore if already unregistered
+        }
+    }
 
     @Override
     public void onResume() {

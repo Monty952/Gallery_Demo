@@ -12,19 +12,23 @@ public class CallLogItem {
     private final int type;
     private final long date;
     private final long duration;
+    @Nullable
+    private final String lookupUri;
 
     public CallLogItem(long id,
                        @Nullable String name,
                        String number,
                        int type,
                        long date,
-                       long duration) {
+                       long duration,
+                       @Nullable String lookupUri) {
         this.id = id;
         this.name = name;
         this.number = number != null ? number : "";
         this.type = type;
         this.date = date;
         this.duration = duration;
+        this.lookupUri = lookupUri;
     }
 
     public long getId() {
@@ -51,6 +55,12 @@ public class CallLogItem {
     public long getDuration() {
         return duration;
     }
+
+    @Nullable
+    public String getLookupUri() {
+        return lookupUri;
+    }
+
     /**
      * Checks if two items represent the exact same database record.
      * Useful for RecyclerView DiffUtil comparisons.
